@@ -1,0 +1,27 @@
+name: code-style
+
+on:
+  push:
+    paths:
+      - '**.php'
+
+jobs:
+  phpstan:
+    name: phpstan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          extensions: rdkafka
+
+      - name: Install composer dependencies
+        uses: ramsey/composer-install@v4
+
+      - name: Run PHPCs
+        run: ./vendor/bin/pint --test
