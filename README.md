@@ -1,10 +1,10 @@
 # Kafka Bus for Laravel
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/kafka-bus/laravel.svg?style=flat-square)](https://packagist.org/packages/kafka-bus/laravel)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/kafka-bus/laravel/run-tests.yml?branch=1.x&label=tests&style=flat-square)](https://github.com/kafka-bus/laravel/actions?query=workflow%3Arun-tests+branch%3A1.x)
-[![GitHub Code Style](https://img.shields.io/github/actions/workflow/status/kafka-bus/laravel/php-code-style.yml?branch=1.x&label=code-style&style=flat-square)](https://github.com/kafka-bus/laravel/actions?query=workflow%3Acode-style+branch%3A1.x)
-[![GitHub PHPStan](https://img.shields.io/github/actions/workflow/status/kafka-bus/laravel/phpstan.yml?branch=1.x&label=phpstan&style=flat-square)](https://github.com/kafka-bus/laravel/actions?query=workflow%3Aphpstan+branch%3A1.x)
-[![Total Downloads](https://img.shields.io/packagist/dt/kafka-bus/laravel.svg?style=flat-square)](https://packagist.org/packages/kafka-bus/laravel)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/kafka-bus/laravel-bridge.svg?style=flat-square)](https://packagist.org/packages/kafka-bus/laravel-bridge)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/kafka-bus/laravel-bridge/run-tests.yml?branch=1.x&label=tests&style=flat-square)](https://github.com/kafka-bus/laravel-bridge/actions?query=workflow%3Arun-tests+branch%3A1.x)
+[![GitHub Code Style](https://img.shields.io/github/actions/workflow/status/kafka-bus/laravel-bridge/php-code-style.yml?branch=1.x&label=code-style&style=flat-square)](https://github.com/kafka-bus/laravel-bridge/actions?query=workflow%3Acode-style+branch%3A1.x)
+[![GitHub PHPStan](https://img.shields.io/github/actions/workflow/status/kafka-bus/laravel-bridge/phpstan.yml?branch=1.x&label=phpstan&style=flat-square)](https://github.com/kafka-bus/laravel-bridge/actions?query=workflow%3Aphpstan+branch%3A1.x)
+[![Total Downloads](https://img.shields.io/packagist/dt/kafka-bus/laravel-bridge.svg?style=flat-square)](https://packagist.org/packages/kafka-bus/laravel-bridge)
 
 Laravel integration for [`kafka-bus`](https://github.com/kafka-bus/kafka-bus) â€” a configuration-driven Apache Kafka client built on top of `ext-rdkafka`. The package wires producers, consumer workers, topic routing, and middleware into the framework, and ships an optional **Commiter** component for idempotent message handling backed by the database.
 
@@ -19,7 +19,7 @@ Laravel integration for [`kafka-bus`](https://github.com/kafka-bus/kafka-bus) â€
 Install the package via Composer:
 
 ```bash
-composer require kafka-bus/laravel
+composer require kafka-bus/laravel-bridge
 ```
 
 Publish the main configuration file:
