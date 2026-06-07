@@ -19,7 +19,7 @@ Laravel integration for [`kafka-bus`](https://github.com/kafka-bus/kafka-bus) â€
 Install the package via Composer:
 
 ```bash
-composer require micromus/kafka-bus-laravel
+composer require kafka-bus/laravel
 ```
 
 Publish the main configuration file:
