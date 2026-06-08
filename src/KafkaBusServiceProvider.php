@@ -72,7 +72,7 @@ class KafkaBusServiceProvider extends ServiceProvider
     protected function makePublisherFactory(Application $app): PublisherFactory
     {
         return new PublisherFactory(
-            new ProducerStreamFactory,
+            new ProducerStreamFactory(),
             $app->make(LaravelPublisherRoutesFactory::class)->create(),
         );
     }
@@ -80,7 +80,7 @@ class KafkaBusServiceProvider extends ServiceProvider
     protected function makeListenerFactory(Application $app): ListenerFactory
     {
         return new ListenerFactory(
-            new ConsumerStreamFactory,
+            new ConsumerStreamFactory(),
             new LaravelWorkerRegistry($app->make(WorkerFactory::class)),
         );
     }
@@ -106,7 +106,7 @@ class KafkaBusServiceProvider extends ServiceProvider
 
     protected function makeDriverRegistry(): DriverRegistry
     {
-        return new DriverRegistry;
+        return new DriverRegistry();
     }
 
     protected function makeConnectionRegistry(Application $app): ConnectionRegistryInterface
