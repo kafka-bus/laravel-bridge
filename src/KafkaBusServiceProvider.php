@@ -15,6 +15,7 @@ use KafkaBus\Core\Interfaces\Bus\BusInterface;
 use KafkaBus\Core\Interfaces\Connections\ConnectionRegistryInterface;
 use KafkaBus\Core\Producers\ProducerStreamFactory;
 use KafkaBus\Core\Topics\TopicRegistry;
+use KafkaBus\Laravel\Commands\KafkaCommitCommand;
 use KafkaBus\Laravel\Commands\KafkaConsumeCommand;
 use KafkaBus\Laravel\Commands\KafkaOffsetSetCommand;
 use KafkaBus\Laravel\Commands\KafkaOffsetShowCommand;
@@ -52,6 +53,7 @@ class KafkaBusServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                KafkaCommitCommand::class,
                 KafkaConsumeCommand::class,
                 KafkaOffsetShowCommand::class,
                 KafkaOffsetSetCommand::class,
@@ -70,7 +72,7 @@ class KafkaBusServiceProvider extends ServiceProvider
     protected function makePublisherFactory(Application $app): PublisherFactory
     {
         return new PublisherFactory(
-            new ProducerStreamFactory(),
+            new ProducerStreamFactory,
             $app->make(LaravelPublisherRoutesFactory::class)->create(),
         );
     }
@@ -78,7 +80,7 @@ class KafkaBusServiceProvider extends ServiceProvider
     protected function makeListenerFactory(Application $app): ListenerFactory
     {
         return new ListenerFactory(
-            new ConsumerStreamFactory(),
+            new ConsumerStreamFactory,
             new LaravelWorkerRegistry($app->make(WorkerFactory::class)),
         );
     }
@@ -104,7 +106,7 @@ class KafkaBusServiceProvider extends ServiceProvider
 
     protected function makeDriverRegistry(): DriverRegistry
     {
-        return new DriverRegistry();
+        return new DriverRegistry;
     }
 
     protected function makeConnectionRegistry(Application $app): ConnectionRegistryInterface
