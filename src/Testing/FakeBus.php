@@ -65,9 +65,9 @@ final readonly class FakeBus implements BusInterface
     }
 
     #[\Override]
-    public function listener(string $listenerWorkerName): Listener
+    public function listener(string|array $name): Listener
     {
-        return $this->bus->listener($listenerWorkerName);
+        return $this->bus->listener($name);
     }
 
     #[\Override]
