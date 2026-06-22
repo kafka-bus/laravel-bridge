@@ -8,7 +8,7 @@ use Illuminate\Database\Query\Builder;
 use KafkaBus\Commiter\Attempt;
 use KafkaBus\Commiter\Interfaces\RepositorySourceInterface;
 
-final readonly class DatabaseRepositorySource implements RepositorySourceInterface
+final readonly class DatabaseRepositorySource implements RepositorySourceInterface, PurgeInterface
 {
     public function __construct(
         private ConnectionInterface $connection,
@@ -53,6 +53,14 @@ final readonly class DatabaseRepositorySource implements RepositorySourceInterfa
             ['key'],
             ['number' => $this->connection->raw('number + 1'), 'commited_at' => $commitedAt]
         );
+    }
+
+    public function purge(\DateTimeImmutable $before): int
+    {
+        return $this->query()
+            ->whereNotNull('commited_at')
+            ->where('commited_at', '<', $before->format('Y-m-d H:i:s'))
+            ->delete();
     }
 
     private function query(): Builder

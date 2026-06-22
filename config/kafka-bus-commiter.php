@@ -5,15 +5,44 @@ use KafkaBus\Commiter\Repositories\NativeMessageRepository;
 
 return [
     /*
-     | Database connection used by DatabaseRepositorySource.
-     | Null means the application's default connection.
+     | Active repository source name (must match a key in "sources").
      */
-    'connection' => env('KAFKA_COMMITER_CONNECTION'),
+    'source' => env('KAFKA_COMMITER_SOURCE', 'default'),
+
+    'sources' => [
+        'default' => [
+            'driver' => 'database',
+            'options' => [
+                /*
+                 | Database connection used by DatabaseRepositorySource.
+                 | Null means the application's default connection.
+                 */
+                'connection' => env('KAFKA_COMMITER_CONNECTION'),
+
+                /*
+                 | Table that stores consumed message commits.
+                 */
+                'table' => 'kafka_bus_commits',
+            ],
+        ],
+
+//        'cache' => [
+//            'driver' => 'redis',
+//            'options' => [
+//                'connection' => 'default',
+//                'prefix' => 'kafka_bus_commits',
+//            ],
+//        ],
+    ],
 
     /*
-     | Table that stores consumed message commits.
+     | Settings for the kafka:commit:purge command.
+     | Only applies to sources that support purging (e.g. database).
+     | Redis sources use key TTL instead.
      */
-    'table' => 'kafka_bus_commits',
+    'purge' => [
+        'days' => env('KAFKA_COMMITER_PURGE_DAYS', 14),
+    ],
 
     /*
      | Consumer message repository implementation.

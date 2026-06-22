@@ -16,6 +16,7 @@ use KafkaBus\Core\Interfaces\Connections\ConnectionRegistryInterface;
 use KafkaBus\Core\Producers\ProducerStreamFactory;
 use KafkaBus\Core\Topics\TopicRegistry;
 use KafkaBus\Laravel\Commands\KafkaCommitCommand;
+use KafkaBus\Laravel\Commands\KafkaCommitPurgeCommand;
 use KafkaBus\Laravel\Commands\KafkaConsumeAllCommand;
 use KafkaBus\Laravel\Commands\KafkaConsumeCommand;
 use KafkaBus\Laravel\Commands\KafkaOffsetSetCommand;
@@ -55,6 +56,7 @@ class KafkaBusServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 KafkaCommitCommand::class,
+                KafkaCommitPurgeCommand::class,
                 KafkaConsumeCommand::class,
                 KafkaConsumeAllCommand::class,
                 KafkaOffsetShowCommand::class,
