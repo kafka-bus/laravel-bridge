@@ -56,7 +56,7 @@ return [
          | Array of middleware.
         */
         'middleware' => [
-            // Micromus\KafkaBusCommiter\Middleware\ConsumerCommiterMiddleware::class
+            // KafkaBus\Commiter\Middleware\ConsumerCommiterMiddleware::class
         ],
 
         /*
@@ -75,7 +75,7 @@ return [
                  | Array of middleware.
                 */
                 'middleware' => [
-                    // Micromus\KafkaBusCommiter\Middleware\ConsumerCommiterMiddleware::class
+                    // KafkaBus\Commiter\Middleware\ConsumerCommiterMiddleware::class
                 ],
 
                 //'additional_options' => [],
@@ -163,7 +163,7 @@ return [
          | Array of middleware.
         */
         'middleware' => [
-            // Micromus\KafkaBusCommiter\Middleware\ProducerIdempotencyMiddleware::class
+            // KafkaBus\Commiter\Middleware\ProducerIdempotencyMiddleware::class
         ],
 
         /*

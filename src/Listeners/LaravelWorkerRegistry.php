@@ -25,11 +25,11 @@ final class LaravelWorkerRegistry implements WorkerRegistryInterface
 
     /**
      * @param string $workerName
-     * @return Worker|null
+     * @return Worker
      *
      * @throws BindingResolutionException
      */
-    public function get(string $workerName): ?Worker
+    public function get(string $workerName): Worker
     {
         return $this->cached[$workerName] ??= $this->workerFactory->create($workerName);
     }

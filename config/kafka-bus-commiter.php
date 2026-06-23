@@ -26,13 +26,13 @@ return [
             ],
         ],
 
-//        'cache' => [
-//            'driver' => 'redis',
-//            'options' => [
-//                'connection' => 'default',
-//                'prefix' => 'kafka_bus_commits',
-//            ],
-//        ],
+        'cache' => [
+            'driver' => 'redis',
+            'options' => [
+                'connection' => 'default',
+                'prefix' => 'kafka_bus_commits',
+            ],
+        ],
     ],
 
     /*

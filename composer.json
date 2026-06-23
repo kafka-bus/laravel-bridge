@@ -23,8 +23,12 @@
         "kafka-bus/commiter": "^1.2",
         "kafka-bus/messages": "^1.0"
     },
+    "suggest": {
+        "laravel/octane": "Required for Octane worker warm-up support"
+    },
     "require-dev": {
         "larastan/larastan": "^2.9 || ^3.0",
+        "laravel/octane": "^2.0",
         "laravel/pint": "^1.14",
         "nunomaduro/collision": "^7.0 || ^8.0",
         "orchestra/testbench": "^8.0 || ^9.17 || ^10.0 || ^11.0",
