@@ -11,7 +11,7 @@ Laravel integration for [`kafka-bus`](https://github.com/kafka-bus/kafka-bus) â€
 ## Requirements
 
 - PHP `^8.2`
-- Laravel `^10.0 || ^11.0 || ^12.0`
+- Laravel
 - `ext-rdkafka`
 
 ## Installation

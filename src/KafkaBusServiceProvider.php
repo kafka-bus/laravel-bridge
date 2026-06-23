@@ -27,7 +27,9 @@ use KafkaBus\Laravel\Connections\ConnectionRegistryFactory;
 use KafkaBus\Laravel\Factories\TopicRegistryFactory;
 use KafkaBus\Laravel\Listeners\LaravelWorkerRegistry;
 use KafkaBus\Laravel\Listeners\WorkerFactory;
+use KafkaBus\Laravel\Octane\EnsureBusIsWarm;
 use KafkaBus\Laravel\Publishers\LaravelPublisherRoutesFactory;
+use Laravel\Octane\Events\WorkerStarting;
 
 class KafkaBusServiceProvider extends ServiceProvider
 {
@@ -52,6 +54,13 @@ class KafkaBusServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/kafka-bus.php' => config_path('kafka-bus.php'),
         ], 'kafka-bus');
+
+        if (class_exists(WorkerStarting::class)) {
+            $this->app['events']->listen(
+                WorkerStarting::class,
+                EnsureBusIsWarm::class,
+            );
+        }
 
         if ($this->app->runningInConsole()) {
             $this->commands([

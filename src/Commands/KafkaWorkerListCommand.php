@@ -36,7 +36,7 @@ final class KafkaWorkerListCommand extends Command
                     $topic->name,
                     is_object($route?->handler) ? get_class($route->handler) : '?',
                     implode("\n", array_map(get_class(...), $worker->options->middleware)),
-                    implode("\n", array_map(get_class(...), $route?->middleware ?? [])),
+                    implode("\n", array_map(get_class(...), $route?->middleware ?: [])),
                 ];
             }
         }
