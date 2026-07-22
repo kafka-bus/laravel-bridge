@@ -40,7 +40,7 @@ final readonly class DatabaseRepositorySource implements RepositorySourceInterfa
         $this->query()->upsert(
             [['key' => $key, 'number' => 1, 'commited_at' => null]],
             ['key'],
-            ['number' => $this->connection->raw('number + 1')]
+            ['number' => $this->connection->raw('excluded.number + 1')]
         );
     }
 
@@ -51,7 +51,7 @@ final readonly class DatabaseRepositorySource implements RepositorySourceInterfa
         $this->query()->upsert(
             [['key' => $key, 'number' => 1, 'commited_at' => $commitedAt]],
             ['key'],
-            ['number' => $this->connection->raw('number + 1'), 'commited_at' => $commitedAt]
+            ['number' => $this->connection->raw('excluded.number + 1'), 'commited_at' => $commitedAt]
         );
     }
 
