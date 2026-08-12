@@ -80,7 +80,7 @@ return [
 
                 //'additional_options' => [],
                 //'auto_commit' => false, // Override global option, remove if not need
-                //'consume_timeout' => 20000, // Override global option, remove if not need
+                //'consumer_timeout' => 20000, // Override global option, remove if not need
 
                 /*
                  | A list of topics that will be subscribed to by the current employee.
@@ -123,7 +123,7 @@ return [
          | Optional, defaults to 5000.
          | Kafka consume timeout in milliseconds.
          */
-        'consume_timeout' => 5_000,
+        'consumer_timeout' => 5_000,
 
         /*
          | Options for Kafka Consumer
