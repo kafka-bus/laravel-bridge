@@ -16,7 +16,7 @@ final class KafkaDriverConnectionFactory extends DriverConnectionFactory
         }
 
         return new KafkaConnectionConfig(
-            broketList: $options['metadata.broker.list'],
+            brokerList: $options['metadata.broker.list'],
             debug: $debug,
             extra: $options
         );
