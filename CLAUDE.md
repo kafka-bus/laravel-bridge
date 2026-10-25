@@ -14,62 +14,72 @@ composer lint                    # Pint + PHPStan together
 
 ## Architecture
 
-This is a Laravel package (`kafka-bus/laravel-bridge`) that wires [`kafka-bus/core`](vendor/kafka-bus/core) into a Laravel application. It does **not** contain core Kafka logic — that lives in the vendored `core` package. This repo only provides:
+This is a Laravel package (`kafka-bus/laravel-bridge`) that wires [`kafka-bus/kafka-bus`](vendor/kafka-bus/kafka-bus) 2.x into a Laravel application. The monorepo package replaces `core`, `commiter`, `messages`, `worker` and `metadata`, and contains all Kafka logic. This repo only provides:
 
 - Service providers, facade, artisan commands, and factories that adapt core to Laravel's container and config system.
-- A `FakeBus` / testing layer (`src/Testing/`) that mirrors `Event::fake()`.
-- An optional **Commiter** component (`src/Components/Commiter/`) for idempotent message tracking via the database.
+- A `FakeBus` / testing layer (`src/Testing/`) that wraps core's `BusFaker`, mirroring `Event::fake()`.
+- An optional **Commiter** component (`src/Components/Commiter/`) for idempotent message tracking via the database/redis.
+
+### How core 2.x works (what the bridge relies on)
+
+- `Bus` is bound to **one** connection (`kafka-bus.default`); it publishes via `PublisherFactory` (routes: message class → topic) and receives via `ReceiverInterface::dispatch()` (routes: **topic name** → handler + middleware). There is no per-worker routing in the bus.
+- A `Worker` (`kafka-bus/worker`) only knows its topics and consumer options. `WorkerRunnerFactory::create($bus, $names)` reads raw messages from `$bus->connection()` and feeds them to `$bus->dispatch()`.
+- Offsets (`kafka:offset:*`) go through `kafka-bus/metadata` (`Metadata::fromConnection()->partitions($topics, $consumerConfig)`).
 
 ### Service providers
 
 | Provider | Responsibility |
 |---|---|
-| `KafkaBusServiceProvider` | Binds `BusInterface`, `ConnectionRegistryInterface`, `ThreadRegistry`, `TopicRegistry`, `PublisherFactory`, `ListenerFactory` into the container; registers all artisan commands. |
+| `KafkaBusServiceProvider` | Binds `BusInterface`, `ConnectionRegistryInterface`, `ConnectionInterface` (default connection), `ReceiverInterface` (`LazyReceiver`), `WorkerRegistryInterface`, `WorkerRunnerFactory`, `TopicRegistry`, `PublisherFactory` into the container; registers all artisan commands. |
 | `CommiterServiceProvider` | Binds `RepositorySourceInterface` and `ConsumerMessageRepositoryInterface` for idempotency tracking; publishes config + migration. |
 
 Both are auto-discovered via `composer.json` `"extra.laravel.providers"`.
 
 ### Config-to-container flow
 
-`config/kafka-bus.php` drives the entire object graph. The factories in `src/Factories/` and `src/Listeners/` and `src/Publishers/` translate config arrays into core objects:
+`config/kafka-bus.php` drives the entire object graph:
 
 - `TopicRegistryFactory` → `TopicRegistry` (logical key → prefixed physical topic name)
-- `WorkerFactory` + `LaravelWorkerRegistry` → builds `Worker` objects (topics, handlers, middleware, options)
-- `LaravelPublisherRoutesFactory` → builds producer `PublisherRoutes` (message class → topic key)
+- `WorkerFactory` → resolves a worker (`consumers.workers.*`: `topics` key list or the topic named like the worker; auto-created from `consumers.routes` when not configured) into a `WorkerDefinition` (topic keys + merged options) and builds `KafkaBus\Worker\Worker`; `WorkerRegistry` caches them (returns `null` for unknown names).
+- `ReceiverRoutesFactory` + `Receivers\RouteFactory` → `RouteCollection<Receiver\Route>` from `consumers.routes`, one lazy route per topic. Middleware order: global `consumers.middleware` + route middleware.
+- `PublisherRoutesFactory` / `PublisherRouteFactory` → `RouteCollection<Publisher\Route>` (message class → topic)
 - `ConnectionRegistryFactory` → `ConnectionRegistryInterface` using `DriverConnectionFactory` / `NullDriverConnectionFactory`
+- `Offsets\PartitionsFactory` → `Partitions` for consumed topics (`consumers.routes`) in the global consumer group; offset commands do not depend on workers
 
 ### Commands
 
 | Command | Class |
 |---|---|
 | `kafka:consume {workerName*}` | `KafkaConsumeCommand` |
-| `kafka:consume:all {--expect=*}` | `KafkaConsumeAllCommand` |
+| `kafka:consume:routes {--expect=*}` | `KafkaConsumeRoutesCommand` |
 | `kafka:commit` | `KafkaCommitCommand` |
-| `kafka:offset:show` | `KafkaOffsetShowCommand` |
-| `kafka:offset:set` | `KafkaOffsetSetCommand` |
+| `kafka:commit:purge` | `KafkaCommitPurgeCommand` |
+| `kafka:offset:show {topicKey?}` | `KafkaConsumerOffsetShowCommand` |
+| `kafka:offset:set {topicKey} {offset}` | `KafkaConsumerOffsetSetCommand` |
+| `kafka:consume:route:list` | `KafkaConsumerRouteListCommand` |
 | `kafka:worker:list` | `KafkaWorkerListCommand` |
-| `kafka:route:list` | `KafkaRouteListCommand` |
+| `kafka:publisher:route:list` | `KafkaPublisherRouteListCommand` |
 
-`KafkaConsumeCommand` and `KafkaConsumeAllCommand` share `AbstractKafkaConsumeCommand`, which calls `$bus->listener($workerNames)->listen()` and catches `ConsumerException` for `EXIT_FAILURE`.
+`KafkaConsumeCommand` and `KafkaConsumeRoutesCommand` share `AbstractKafkaConsumeCommand`, which calls `$runnerFactory->create($bus, $workerNames)->run()` and catches `ConsumerException` for `EXIT_FAILURE`.
 
 ### Testing layer
 
-`KafkaBus::fake()` replaces `BusInterface` in the container with `FakeBus` and replaces `ConnectionRegistryInterface` with `ConnectionRegistryFaker`. After that:
+`KafkaBus::fake()` binds `FakeBus` (wrapping core's `BusFaker`, PHPUnit assertion driver) as `BusInterface` and its `ConnectionFaker` as `ConnectionInterface`. Everything not defined on `FakeBus` is forwarded to `BusFaker` via `__call`. After that:
 
 - `KafkaBus::addMessage(Message $msg)` — queues an `RdKafka\Message` into `ConnectionFaker`.
-- `KafkaBus::listen(string $workerName)` — runs the full consumer pipeline (middleware → handler → commit) without a real broker. Takes a **single string** worker name.
-- `KafkaBus::assertPublished/assertCommitted/assertNothingPublished/…` — PHPUnit assertions on the in-memory state.
+- `KafkaBus::listen(string|array $workerName)` — runs the full consumer pipeline (stream → receiver middleware → handler → commit) without a real broker via `WorkerRunnerFactory`.
+- `KafkaBus::assertPublished/assertCommitted/assertDispatched/assertNothingPublished/…` — assertions on the in-memory state.
 
 `MessageFactory::for()->withTopicKey('products')->make('payload')` creates `RdKafka\Message` instances for tests.
 
-When testing artisan commands (`kafka:consume`, `kafka:consum:all`) with `KafkaBus::fake()`, the command calls `$bus->listener(array $workerNames)`. `FakeBus::listener()` accepts `string|array` and delegates to the underlying real bus (which uses `ConnectionRegistryFaker`). The `ConsumerStream` exits cleanly once all queued messages are consumed (`KafkaMessagesEndedException` is caught internally).
+Artisan commands (`kafka:consume`, `kafka:consume:routes`) under `KafkaBus::fake()` resolve the `FakeBus`, so the `WorkerRunnerFactory` reads from `ConnectionFaker`. The `ConsumerStream` exits cleanly once all queued messages are consumed (`KafkaMessagesEndedException` is caught internally).
 
-For testing `ConsumerException` failure paths in commands, mock `BusInterface` directly with Mockery:
+For testing `ConsumerException` failure paths in commands, mock `WorkerRunnerFactory` directly with Mockery:
 
 ```php
-$bus = Mockery::mock(BusInterface::class);
-$bus->shouldReceive('listener')->andThrow(new ConsumerException('error'));
-$this->app->instance(BusInterface::class, $bus);
+$factory = Mockery::mock(WorkerRunnerFactory::class);
+$factory->shouldReceive('create')->andThrow(new ConsumerException('error'));
+$this->app->instance(WorkerRunnerFactory::class, $factory);
 ```
 
 ### Test setup

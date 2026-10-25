@@ -1,6 +1,6 @@
 <?php
 
-use KafkaBus\Core\Interfaces\Bus\BusInterface;
+use KafkaBus\Core\BusInterface;
 use KafkaBus\Core\Testing\Messages\ProducerMessageFaker;
 use KafkaBus\Laravel\Facades\KafkaBus;
 

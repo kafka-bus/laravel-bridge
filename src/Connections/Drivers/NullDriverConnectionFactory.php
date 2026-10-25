@@ -2,8 +2,8 @@
 
 namespace KafkaBus\Laravel\Connections\Drivers;
 
+use KafkaBus\Core\Connections\Config\ConnectionConfigInterface;
 use KafkaBus\Core\Connections\Config\NullConnectionConfig;
-use KafkaBus\Core\Interfaces\Connections\ConnectionConfigInterface;
 
 final class NullDriverConnectionFactory extends DriverConnectionFactory
 {

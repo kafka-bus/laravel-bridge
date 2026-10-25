@@ -1,8 +1,9 @@
 <?php
 
-use KafkaBus\Core\Bus\Publishers\Router\PublisherRoutes;
+use KafkaBus\Core\Publishers\Routing\Route;
+use KafkaBus\Core\Routing\RouteCollection;
 use KafkaBus\Core\Testing\Messages\ProducerMessageFaker;
-use KafkaBus\Laravel\Publishers\LaravelPublisherRoutesFactory;
+use KafkaBus\Laravel\Publishers\PublisherRoutesFactory;
 
 it('create publisher routes', function () {
     config()->set('kafka-bus.topics', ['products' => 'test-products-topic']);
@@ -31,8 +32,8 @@ it('create publisher routes', function () {
         ]
     ]);
 
-    /** @var PublisherRoutes $routes */
-    $routes = resolve(LaravelPublisherRoutesFactory::class)
+    /** @var RouteCollection<Route> $routes */
+    $routes = resolve(PublisherRoutesFactory::class)
         ->create();
 
     $route = $routes->get(ProducerMessageFaker::class);
@@ -56,8 +57,8 @@ it('create publisher routes by short config', function () {
         ]
     ]);
 
-    /** @var PublisherRoutes $routes */
-    $routes = resolve(LaravelPublisherRoutesFactory::class)
+    /** @var RouteCollection<Route> $routes */
+    $routes = resolve(PublisherRoutesFactory::class)
         ->create();
 
     $route = $routes->get(ProducerMessageFaker::class);

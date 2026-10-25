@@ -4,24 +4,22 @@ namespace KafkaBus\Laravel\Factories;
 
 final readonly class OptionsMerger
 {
+    private MiddlewareMerger $middlewareMerger;
+
     public function __construct(
         private array $globalOptions
     ) {
+        $this->middlewareMerger = new MiddlewareMerger($this->globalOptions['middleware'] ?? []);
     }
 
     public function merge(array $options): array
     {
-        $middlewares = $options['middleware'] ?? [];
-        $globalMiddleware = array_diff($this->globalOptions['middleware'] ?? [], $middlewares);
 
         return [
            ...$this->globalOptions,
            ...$options,
 
-           'middleware' => [
-               ...$globalMiddleware,
-               ...$middlewares,
-           ],
+           'middleware' => $this->middlewareMerger->merge($options['middleware'] ?? []),
 
            'additional_options' => [
                ...($this->globalOptions['additional_options'] ?? []),

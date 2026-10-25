@@ -5,27 +5,25 @@ declare(strict_types=1);
 namespace KafkaBus\Laravel\Commands;
 
 use Illuminate\Console\Command;
-use KafkaBus\Core\Bus\Listeners\Partitions\CommitOffset;
-use KafkaBus\Core\Bus\Listeners\Partitions\Offset;
-use KafkaBus\Core\Exceptions\Listeners\CannotCommitOffsetException;
-use KafkaBus\Core\Exceptions\Listeners\ListenerException;
 use KafkaBus\Core\Exceptions\TopicCannotResolvedException;
-use KafkaBus\Core\Interfaces\Bus\BusInterface;
 use KafkaBus\Core\Topics\TopicRegistry;
+use KafkaBus\Laravel\Factories\PartitionsFactory;
+use KafkaBus\Metadata\Exceptions\CannotCommitOffsetException;
+use KafkaBus\Metadata\Partitions\CommitOffset;
+use KafkaBus\Metadata\Partitions\Offset;
+use RdKafka\Exception as RdKafkaException;
 
-final class KafkaOffsetSetCommand extends Command
+final class KafkaConsumerOffsetSetCommand extends Command
 {
-    protected $signature = 'kafka:offset:set
-        {workerName : Worker name from kafka-bus.consumers.workers}
+    protected $signature = 'kafka:consumer:offset:set
         {topicKey   : Topic key from kafka-bus.topics}
         {offset     : earliest, latest, or numeric offset}
         {--partition= : Partition id, omit to apply to all partitions}';
 
-    protected $description = 'Set committed offsets for a worker topic';
+    protected $description = 'Set committed offsets for a consumed topic';
 
-    public function handle(BusInterface $bus, TopicRegistry $topicRegistry): int
+    public function handle(PartitionsFactory $partitionsFactory, TopicRegistry $topicRegistry): int
     {
-        $workerName = $this->argument('workerName');
         $topicKey = $this->argument('topicKey');
         $offsetInput = $this->argument('offset');
         $partitionInput = $this->option('partition');
@@ -42,8 +40,7 @@ final class KafkaOffsetSetCommand extends Command
 
             $partition = $partitionInput === null ? RD_KAFKA_PARTITION_UA : (int) $partitionInput;
 
-            $results = $bus->listener($workerName)
-                ->partitions()
+            $results = $partitionsFactory->create([$topicKey])
                 ->setOffset(new CommitOffset($topic, $partition, $offset));
 
             $rows = array_map(
@@ -64,7 +61,7 @@ final class KafkaOffsetSetCommand extends Command
 
             return self::SUCCESS;
         }
-        catch (CannotCommitOffsetException|TopicCannotResolvedException|ListenerException $exception) {
+        catch (CannotCommitOffsetException|TopicCannotResolvedException|RdKafkaException $exception) {
             $this->error($exception->getMessage());
 
             return self::FAILURE;

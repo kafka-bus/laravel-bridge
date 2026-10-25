@@ -3,7 +3,7 @@
 namespace KafkaBus\Laravel\Connections;
 
 use Illuminate\Container\Container;
-use KafkaBus\Core\Interfaces\Connections\ConnectionConfigInterface;
+use KafkaBus\Core\Connections\Config\ConnectionConfigInterface;
 use KafkaBus\Laravel\Connections\Drivers\DriverConnectionFactory;
 use KafkaBus\Laravel\Connections\Drivers\KafkaDriverConnectionFactory;
 use KafkaBus\Laravel\Connections\Drivers\NullDriverConnectionFactory;

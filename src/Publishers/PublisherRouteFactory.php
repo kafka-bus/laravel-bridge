@@ -4,13 +4,13 @@ namespace KafkaBus\Laravel\Publishers;
 
 use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
-use KafkaBus\Core\Bus\Publishers\Router\Options;
-use KafkaBus\Core\Bus\Publishers\Router\Route;
+use KafkaBus\Core\Publishers\Routing\Options;
+use KafkaBus\Core\Publishers\Routing\Route;
 use KafkaBus\Core\Topics\TopicRegistry;
 use KafkaBus\Laravel\Exceptions\KafkaBusConfigurationException;
 use KafkaBus\Laravel\Factories\OptionsMerger;
 
-final readonly class RouteFactory
+final readonly class PublisherRouteFactory
 {
     /**
      * @var array<class-string, mixed>

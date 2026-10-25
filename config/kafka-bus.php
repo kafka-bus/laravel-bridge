@@ -60,60 +60,6 @@ return [
         ],
 
         /*
-         | This defines Workers that will be run in separate processes in order to
-         | subscribe to Apache Kafka topics.
-         */
-        'workers' => [
-            /*
-             | This is worker name.
-             | To start Worker, run the command:
-             | php artisan kafka:consume default
-             */
-            'default' => [
-                /*
-                 | Optional, defaults to empty array.
-                 | Array of middleware.
-                */
-                'middleware' => [
-                    // KafkaBus\Commiter\Middleware\ConsumerCommiterMiddleware::class
-                ],
-
-                //'additional_options' => [],
-                //'auto_commit' => false, // Override global option, remove if not need
-                //'consumer_timeout' => 20000, // Override global option, remove if not need
-
-                /*
-                 | A list of topics that will be subscribed to by the current employee.
-                 | For each of them, you need to create a PHP class that will handle Apache Kafka messages.
-                 */
-                'topics' => [
-                    //'products' => App\Kafka\Consumers\ProductsTopicConsumer::class,
-
-                    //'products' => [
-                    //    'handler' => App\Kafka\Consumers\ProductsTopicConsumer::class,
-                    //    'middleware' => []
-                    //],
-                ],
-            ],
-
-            // consume one topic when topic key == worker name
-            //'products' => App\Kafka\Consumers\ProductsTopicConsumer::class,
-
-            // consume one topic with options and topic key == worker name
-            //'products' => [
-            //    'middleware' => [],
-            //    'handler' => App\Kafka\Consumers\ProductsTopicConsumer::class,
-            //],
-
-            // consume one topic when topic key != worker name
-            //'products-other-name' => [
-            //    'middleware' => [],
-            //    'topic_key' => 'products',
-            //    'handler' => App\Kafka\Consumers\ProductsTopicConsumer::class,
-            //],
-        ],
-
-        /*
          | If you set enable.auto.commit (which is the default), then the consumer will automatically commit offsets periodically at the
          | interval set by auto.commit.interval.ms.
          */
@@ -155,6 +101,47 @@ return [
 
             'auto.offset.reset' => 'beginning',
         ],
+
+        'routes' => [
+            //'products' => App\Kafka\Consumers\ProductsTopicConsumer::class,
+
+            //'products' => [
+            //    'middleware' => [],
+            //    'handler' => App\Kafka\Consumers\ProductsTopicConsumer::class,
+            //],
+        ],
+
+        /*
+         | This defines Workers that will be run in separate processes in order to
+         | subscribe to Apache Kafka topics.
+         */
+        'workers' => [
+            /*
+             | This is worker name.
+             | To start Worker, run the command:
+             | php artisan kafka:consume default
+             */
+            'default' => [
+                //'additional_options' => [],
+                //'auto_commit' => false, // Override global option, remove if not need
+                //'consumer_timeout' => 20000, // Override global option, remove if not need
+
+                /*
+                 | A list of topics that will be subscribed to by the current employee.
+                 | For each of them, you need to create a PHP class that will handle Apache Kafka messages.
+                 */
+                'topics' => [
+                    //'products'
+                ],
+            ],
+
+            // consume one topic when topic key == worker name
+            //'products' => [
+                //'additional_options' => [],
+                //'auto_commit' => false, // Override global option, remove if not need
+                //'consumer_timeout' => 20000, // Override global option, remove if not need
+            //],
+        ],
     ],
 
     'producers' => [
@@ -163,7 +150,7 @@ return [
          | Array of middleware.
         */
         'middleware' => [
-            // KafkaBus\Commiter\Middleware\ProducerIdempotencyMiddleware::class
+            // KafkaBus\Commiter\Middleware\PublisherIdempotencyMiddleware::class
         ],
 
         /*

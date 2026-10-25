@@ -5,30 +5,38 @@ namespace KafkaBus\Laravel;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use KafkaBus\Core\Bus;
-use KafkaBus\Core\Bus\Listeners\ListenerFactory;
-use KafkaBus\Core\Bus\Publishers\PublisherFactory;
-use KafkaBus\Core\Bus\ThreadFactory;
-use KafkaBus\Core\Bus\ThreadRegistry;
+use KafkaBus\Core\BusInterface;
+use KafkaBus\Core\Connections\ConnectionInterface;
+use KafkaBus\Core\Connections\Registry\ConnectionRegistryInterface;
 use KafkaBus\Core\Connections\Registry\DriverRegistry;
-use KafkaBus\Core\Consumers\ConsumerStreamFactory;
-use KafkaBus\Core\Interfaces\Bus\BusInterface;
-use KafkaBus\Core\Interfaces\Connections\ConnectionRegistryInterface;
-use KafkaBus\Core\Producers\ProducerStreamFactory;
+use KafkaBus\Core\Publishers\PublisherFactory;
+use KafkaBus\Core\Publishers\PublisherStreamFactory;
+use KafkaBus\Core\Publishers\PublisherStreamFactoryInterface;
+use KafkaBus\Core\Receivers\LazyReceiver;
+use KafkaBus\Core\Receivers\Receiver;
+use KafkaBus\Core\Receivers\ReceiverInterface;
+use KafkaBus\Core\Receivers\Routing\ReceiverRouter;
 use KafkaBus\Core\Topics\TopicRegistry;
 use KafkaBus\Laravel\Commands\KafkaCommitCommand;
 use KafkaBus\Laravel\Commands\KafkaCommitPurgeCommand;
-use KafkaBus\Laravel\Commands\KafkaConsumeAllCommand;
+use KafkaBus\Laravel\Commands\KafkaConsumeRoutesCommand;
 use KafkaBus\Laravel\Commands\KafkaConsumeCommand;
-use KafkaBus\Laravel\Commands\KafkaOffsetSetCommand;
-use KafkaBus\Laravel\Commands\KafkaOffsetShowCommand;
-use KafkaBus\Laravel\Commands\KafkaRouteListCommand;
+use KafkaBus\Laravel\Commands\KafkaConsumerRouteListCommand;
+use KafkaBus\Laravel\Commands\KafkaConsumerOffsetSetCommand;
+use KafkaBus\Laravel\Commands\KafkaConsumerOffsetShowCommand;
+use KafkaBus\Laravel\Commands\KafkaPublisherRouteListCommand;
 use KafkaBus\Laravel\Commands\KafkaWorkerListCommand;
+use KafkaBus\Laravel\Components\Octane\EnsureBusIsWarm;
 use KafkaBus\Laravel\Connections\ConnectionRegistryFactory;
 use KafkaBus\Laravel\Factories\TopicRegistryFactory;
-use KafkaBus\Laravel\Listeners\LaravelWorkerRegistry;
-use KafkaBus\Laravel\Listeners\WorkerFactory;
-use KafkaBus\Laravel\Octane\EnsureBusIsWarm;
-use KafkaBus\Laravel\Publishers\LaravelPublisherRoutesFactory;
+use KafkaBus\Laravel\Publishers\PublisherRoutesFactory;
+use KafkaBus\Laravel\Receivers\ReceiverRoutesFactory;
+use KafkaBus\Laravel\Workers\WorkerFactory;
+use KafkaBus\Laravel\Workers\WorkerFactoryInterface;
+use KafkaBus\Laravel\Workers\WorkerRegistry;
+use KafkaBus\Worker\Consumers\ConsumerStreamFactory;
+use KafkaBus\Worker\Consumers\ConsumerStreamFactoryInterface;
+use KafkaBus\Worker\Registry\WorkerRegistryInterface;
 use Laravel\Octane\Events\WorkerStarting;
 
 class KafkaBusServiceProvider extends ServiceProvider
@@ -38,15 +46,21 @@ class KafkaBusServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/kafka-bus.php', 'kafka-bus');
 
         $this->app->bind(TopicRegistry::class, $this->makeTopicRegistry(...));
-
         $this->app->bind(PublisherFactory::class, $this->makePublisherFactory(...));
-        $this->app->bind(ListenerFactory::class, $this->makeListenerFactory(...));
+        $this->app->bind(ReceiverRouter::class, $this->makeReceiverRouter(...));
+        $this->app->bind(ReceiverInterface::class, $this->makeReceiver(...));
 
-        $this->app->singleton(DriverRegistry::class, $this->makeDriverRegistry(...));
-        $this->app->singleton(ThreadRegistry::class, $this->makeThreadRegistry(...));
         $this->app->singleton(ConnectionRegistryInterface::class, $this->makeConnectionRegistry(...));
+        $this->app->singleton(ConnectionInterface::class, $this->makeConnection(...));
+        $this->app->singleton(WorkerRegistryInterface::class, $this->makeWorkerRegistry(...));
 
-        $this->app->singleton(BusInterface::class, $this->makeBus(...));
+        $this->app->singleton(DriverRegistry::class, DriverRegistry::class);
+        $this->app->singleton(BusInterface::class, Bus::class);
+
+        $this->app->bind(WorkerFactoryInterface::class, WorkerFactory::class);
+
+        $this->app->bind(PublisherStreamFactoryInterface::class, PublisherStreamFactory::class);
+        $this->app->bind(ConsumerStreamFactoryInterface::class, ConsumerStreamFactory::class);
     }
 
     public function boot(): void
@@ -67,11 +81,12 @@ class KafkaBusServiceProvider extends ServiceProvider
                 KafkaCommitCommand::class,
                 KafkaCommitPurgeCommand::class,
                 KafkaConsumeCommand::class,
-                KafkaConsumeAllCommand::class,
-                KafkaOffsetShowCommand::class,
-                KafkaOffsetSetCommand::class,
+                KafkaConsumeRoutesCommand::class,
+                KafkaConsumerRouteListCommand::class,
+                KafkaConsumerOffsetShowCommand::class,
+                KafkaConsumerOffsetSetCommand::class,
                 KafkaWorkerListCommand::class,
-                KafkaRouteListCommand::class,
+                KafkaPublisherRouteListCommand::class,
             ]);
         }
     }
@@ -85,46 +100,35 @@ class KafkaBusServiceProvider extends ServiceProvider
     protected function makePublisherFactory(Application $app): PublisherFactory
     {
         return new PublisherFactory(
-            new ProducerStreamFactory(),
-            $app->make(LaravelPublisherRoutesFactory::class)->create(),
+            $app->make(PublisherStreamFactoryInterface::class),
+            $app->make(PublisherRoutesFactory::class)->create(),
         );
     }
 
-    protected function makeListenerFactory(Application $app): ListenerFactory
+    protected function makeWorkerRegistry(Application $app): WorkerRegistryInterface
     {
-        return new ListenerFactory(
-            new ConsumerStreamFactory(),
-            new LaravelWorkerRegistry($app->make(WorkerFactory::class)),
-        );
+        return new WorkerRegistry($app->make(WorkerFactory::class));
     }
 
-    protected function makeThreadRegistry(Application $app): ThreadRegistry
+    protected function makeReceiver(Application $app): ReceiverInterface
     {
-        return new ThreadRegistry(
-            $app->make(ConnectionRegistryInterface::class),
-            new ThreadFactory(
-                $app->make(ListenerFactory::class),
-                $app->make(PublisherFactory::class),
-            )
-        );
+        return new LazyReceiver(static fn () => new Receiver($app->make(ReceiverRouter::class)));
     }
 
-    protected function makeBus(Application $app): BusInterface
+    protected function makeReceiverRouter(Application $app): ReceiverRouter
     {
-        return new Bus(
-            $app->make(ThreadRegistry::class),
-            $app['config']->get('kafka-bus.default')
-        );
-    }
-
-    protected function makeDriverRegistry(): DriverRegistry
-    {
-        return new DriverRegistry();
+        return new ReceiverRouter($app->make(ReceiverRoutesFactory::class)->create());
     }
 
     protected function makeConnectionRegistry(Application $app): ConnectionRegistryInterface
     {
         return $app->make(ConnectionRegistryFactory::class)
             ->create($app->make(DriverRegistry::class));
+    }
+
+    protected function makeConnection(Application $app): ConnectionInterface
+    {
+        return $app->make(ConnectionRegistryInterface::class)
+            ->connection($app['config']->get('kafka-bus.default'));
     }
 }

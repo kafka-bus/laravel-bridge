@@ -9,6 +9,9 @@ use KafkaBus\Laravel\Facades\KafkaBus;
 beforeEach(function () {
     config()->set('kafka-bus.topics', ['products' => 'test-products-topic']);
     config()->set('kafka-bus.consumers.workers', [
+        'products' => [],
+    ]);
+    config()->set('kafka-bus.consumers.routes', [
         'products' => VoidConsumerHandlerFaker::class,
     ]);
 });
@@ -57,8 +60,8 @@ it('accepts multiple worker names and outputs them comma-separated', function ()
         'orders'   => 'test-orders-topic',
     ]);
     config()->set('kafka-bus.consumers.workers', [
-        'products' => VoidConsumerHandlerFaker::class,
-        'orders'   => VoidConsumerHandlerFaker::class,
+        'products' => [],
+        'orders'   => [],
     ]);
 
     KafkaBus::fake();
@@ -66,4 +69,21 @@ it('accepts multiple worker names and outputs them comma-separated', function ()
     $this->artisan('kafka:consume', ['workerName' => ['products', 'orders']])
         ->expectsOutput('Start consuming for "products, orders"')
         ->assertExitCode(0);
+});
+
+it('consumes a topic by its key without a configured worker', function () {
+    config()->set('kafka-bus.consumers.workers', []);
+
+    KafkaBus::fake();
+
+    KafkaBus::addMessage(
+        MessageFactory::for()
+            ->withTopicKey('products')
+            ->make('hello')
+    );
+
+    $this->artisan('kafka:consume products')
+        ->assertExitCode(0);
+
+    KafkaBus::assertCommitted('products');
 });

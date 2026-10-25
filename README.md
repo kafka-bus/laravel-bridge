@@ -95,7 +95,7 @@ A producer route binds a message class to a logical topic key. The shortest form
 ```php
 'producers' => [
     'middleware' => [
-        // KafkaBus\Commiter\Middleware\ProducerIdempotencyMiddleware::class,
+        // KafkaBus\Commiter\Middleware\PublisherIdempotencyMiddleware::class,
     ],
 
     'routes' => [
@@ -146,48 +146,45 @@ KafkaBus::publish(new \App\Kafka\Messages\ProductMessage(/* ... */));
 
 ### Consumers
 
-Workers are the units consumed by the artisan command. Each worker subscribes to one or more topics and dispatches incoming messages to handler classes.
+Consumers are configured in two independent parts:
+
+- `routes` — which handler (and middleware) processes messages of a topic. Messages are routed by topic through the bus, so every topic has exactly one handler.
+- `workers` — which topics a process reads (`kafka:consume <worker>`) and with which consumer options.
 
 ```php
 'consumers' => [
+    // Global middleware, run before route middleware
     'middleware' => [
         // KafkaBus\Commiter\Middleware\ConsumerCommiterMiddleware::class,
+    ],
+
+    'routes' => [
+        // topic key => handler
+        'products' => App\Kafka\Consumers\ProductsTopicConsumer::class,
+
+        // topic key => handler with route middleware
+        'orders' => [
+            'handler'    => App\Kafka\Consumers\OrdersTopicConsumer::class,
+            'middleware' => [App\Kafka\Middleware\TenantContextMiddleware::class],
+        ],
     ],
 
     'workers' => [
         // Multi-topic worker with per-worker overrides
         'default' => [
-            'middleware'   => [],
-            'auto_commit'  => false,
-            'consume_timeout' => 20000,
-            'topics' => [
-                'products' => App\Kafka\Consumers\ProductsTopicConsumer::class,
-                'orders'   => [
-                    'handler'    => App\Kafka\Consumers\OrdersTopicConsumer::class,
-                    'middleware' => [App\Kafka\Middleware\TenantContextMiddleware::class],
-                ],
-            ],
+            'auto_commit'      => false,
+            'consumer_timeout' => 20000,
+            'topics'           => ['products', 'orders'],
         ],
 
-        // Single-topic worker, worker name == topic key
-        'products' => App\Kafka\Consumers\ProductsTopicConsumer::class,
-
-        // Single-topic worker with overrides, worker name == topic key
+        // Worker without `topics` consumes the topic whose key equals the worker name
         'orders' => [
-            'middleware' => [],
-            'handler'    => App\Kafka\Consumers\OrdersTopicConsumer::class,
-        ],
-
-        // Single-topic worker where worker name != topic key
-        'products-secondary' => [
-            'topic_key'  => 'products',
-            'middleware' => [],
-            'handler'    => App\Kafka\Consumers\ProductsTopicConsumer::class,
+            'auto_commit' => false,
         ],
     ],
 
-    'auto_commit'     => env('KAFKA_CONSUMER_AUTO_COMMIT', false),
-    'consume_timeout' => 5_000,
+    'auto_commit'      => env('KAFKA_CONSUMER_AUTO_COMMIT', false),
+    'consumer_timeout' => 5_000,
 
     'additional_options' => [
         'group.id'              => env('KAFKA_CONSUMER_GROUP_ID', env('APP_NAME')),
@@ -199,7 +196,9 @@ Workers are the units consumed by the artisan command. Each worker subscribes to
 ],
 ```
 
-Each worker resolves options in this order: `additional_options`, `auto_commit`, `consume_timeout`, and middleware are taken from the worker entry, then merged with the global `consumers.*` defaults.
+A worker that is not listed in `workers` but whose name equals a topic key from `routes` is created automatically with that single topic, so `php artisan kafka:consume products` works without any `workers` entry (such workers are also listed by `kafka:worker:list` and consumed by `kafka:consume:routes`, unless the topic is already consumed by a worker from `workers`).
+
+Worker options (`additional_options`, `auto_commit`, `consumer_timeout`) are taken from the worker entry and merged with the global `consumers.*` defaults.
 
 Run a worker:
 
@@ -209,13 +208,17 @@ php artisan kafka:consume default
 
 ## Artisan commands
 
-| Command                                                            | Description                                                                                                                                                  |
-|--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `kafka:consume {workerName}`                                       | Start a long-running consumer for the given worker.                                                                                                          |
-| `kafka:worker:list`                                                | Show registered workers, their topic keys, resolved topic names, handlers, consumer middleware, and route middleware.                                        |
-| `kafka:route:list`                                                 | Show registered producer routes (message class → topic) and middleware.                                                                                      |
-| `kafka:offset:show {workerName}`                                   | Show current / min / max offsets for every partition of every topic the worker subscribes to.                                                                |
-| `kafka:offset:set {workerName} {topicKey} {offset} {--partition=}` | Set the committed offset for a topic. `offset` accepts `earliest`, `latest`, or a numeric value. Omit `--partition` to apply to all partitions of the topic. |
+| Command                                              | Description                                                                                                                                      |
+|------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| `kafka:consume {workerName*}`                        | Start a long-running consumer for the given worker(s).                                                                                           |
+| `kafka:consume:routes {--expect=*}`                     | Consume all workers (configured and automatic), except the ones passed to `--expect`.                                                            |
+| `kafka:worker:list`                                  | Show registered workers, their topic keys, resolved topic names, handlers, consumer middleware, and route middleware.                            |
+| `kafka:consume:route:list`                           | Show routes registered in the receiver (topic → handler) with the effective middleware (global + route).                                                           |
+| `kafka:publisher:route:list`                         | Show registered producer routes (message class → topic) and middleware.                                                                          |
+| `kafka:offset:show {topicKey?}`                      | Show current / min / max offsets for every partition of the topic (all topics from `consumers.routes` when omitted).                             |
+| `kafka:offset:set {topicKey} {offset} {--partition=}` | Set the committed offset for a topic. `offset` accepts `earliest`, `latest`, or a numeric value. Omit `--partition` to apply to all partitions. |
+
+Offsets are read and committed for the consumer group from the global `consumers.additional_options['group.id']`, so the commands do not depend on a worker.
 
 ### Inspecting workers and routes
 
@@ -234,7 +237,20 @@ php artisan kafka:worker:list
 ```
 
 ```bash
-php artisan kafka:route:list
+php artisan kafka:consume:route:list
+```
+
+```
++-----------+----------------------------+-------------------------------------------+------------------------------+
+| Topic key | Topic name                 | Handler                                   | Middleware                   |
++-----------+----------------------------+-------------------------------------------+------------------------------+
+| products  | production.fact.products.1 | App\Kafka\Consumers\ProductsTopicConsumer |                              |
+| orders    | production.fact.orders.1   | App\Kafka\Consumers\OrdersTopicConsumer   | App\...\TenantMiddleware      |
++-----------+----------------------------+-------------------------------------------+------------------------------+
+```
+
+```bash
+php artisan kafka:publisher:route:list
 ```
 
 ```
@@ -249,7 +265,7 @@ php artisan kafka:route:list
 ### Inspecting and resetting offsets
 
 ```bash
-php artisan kafka:offset:show default
+php artisan kafka:offset:show products
 ```
 
 ```
@@ -264,19 +280,19 @@ php artisan kafka:offset:show default
 Reset all partitions of a topic to the earliest available offset:
 
 ```bash
-php artisan kafka:offset:set default products earliest
+php artisan kafka:offset:set products earliest
 ```
 
 Move a single partition to an explicit numeric offset:
 
 ```bash
-php artisan kafka:offset:set default products 150 --partition=0
+php artisan kafka:offset:set products 150 --partition=0
 ```
 
 Jump every partition to the high-water mark (skip backlog):
 
 ```bash
-php artisan kafka:offset:set default products latest
+php artisan kafka:offset:set products latest
 ```
 
 The command prints the resulting offsets:
@@ -290,7 +306,7 @@ The command prints the resulting offsets:
 +-----------+----------------------------+-----------+-----+-----+
 ```
 
-> The worker must not be running while you reset its offsets — otherwise the active consumer group will overwrite the new position on its next commit.
+> Consumers of the group must not be running while you reset its offsets — otherwise the active consumer group will overwrite the new position on its next commit.
 
 ## Commiter
 
@@ -354,11 +370,11 @@ For each message the middleware:
 
 ### Producing idempotent messages
 
-Implement `HasIdempotency` on the producer message and enable `ProducerIdempotencyMiddleware`:
+Implement `HasIdempotency` on the producer message and enable `PublisherIdempotencyMiddleware`:
 
 ```php
 use KafkaBus\Commiter\Interfaces\HasIdempotency;
-use KafkaBus\Core\Messages\ProducerMessage;
+use KafkaBus\Core\Producers\Messages\ProducerMessage;
 
 final class ProductMessage extends ProducerMessage implements HasIdempotency
 {
@@ -374,7 +390,7 @@ final class ProductMessage extends ProducerMessage implements HasIdempotency
 ```php
 'producers' => [
     'middleware' => [
-        \KafkaBus\Commiter\Middleware\ProducerIdempotencyMiddleware::class,
+        \KafkaBus\Commiter\Middleware\PublisherIdempotencyMiddleware::class,
     ],
 ],
 ```
@@ -412,7 +428,7 @@ it('publishes a product message', function () {
 });
 ```
 
-Assert with a callback to inspect the serialised `ProducerMessage` (after the full producer pipeline, including middleware). The callback receives a `Micromus\KafkaBus\Producers\Messages\ProducerMessage` instance:
+Assert with a callback to inspect the serialised `ProducerMessage` (after the full producer pipeline, including middleware). The callback receives a `KafkaBus\Core\Producers\Messages\ProducerMessage` instance:
 
 ```php
 KafkaBus::assertPublished(
@@ -445,7 +461,7 @@ $all      = KafkaBus::allPublished();
 
 #### Dispatching and asserting consumer messages
 
-`addMessage()` queues an `RdKafka\Message` into the fake connection. Once queued, call `listen()` to run the full consumer path — `ConnectionFaker` → `ConsumerFaker` → `ConsumerStream` → consumer middleware → route middleware → handler → commit — without touching a real broker.
+`addMessage()` queues an `RdKafka\Message` into the fake connection. Once queued, call `listen()` to run the full consumer path — `ConnectionFaker` → `ConsumerFaker` → `ConsumerStream` → `Receiver` (consumer middleware → route middleware → handler) → commit — without touching a real broker.
 
 ```php
 use KafkaBus\Core\Testing\Consumers\MessageFactory;
@@ -513,6 +529,19 @@ $committed = KafkaBus::getCommitted('products'); // list<ConsumerMessageInterfac
 
 expect($committed[0]->payload())->toBe('{"id":1}');
 expect($committed[0]->headers())->toHaveKey('x-idempotency-key');
+```
+
+#### Asserting dispatched messages
+
+A message is *dispatched* when it has been handled by the receiver (middleware and handler passed), before the offset is committed:
+
+```php
+KafkaBus::assertDispatched('products');
+KafkaBus::assertDispatchedTimes('products', 2);
+KafkaBus::assertNotDispatched('orders');
+KafkaBus::assertNothingDispatched();
+
+$dispatched = KafkaBus::getDispatched('products'); // list<ConsumerMessageInterface>
 ```
 
 ## Changelog

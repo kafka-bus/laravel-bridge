@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use KafkaBus\Core\Bus;
-use KafkaBus\Core\Interfaces\Bus\BusInterface;
-use KafkaBus\Core\Interfaces\Connections\ConnectionRegistryInterface;
-use KafkaBus\Core\Testing\Connections\ConnectionRegistryFaker;
+use KafkaBus\Core\BusInterface;
+use KafkaBus\Core\Connections\ConnectionInterface;
+use KafkaBus\Core\Testing\Connections\ConnectionFaker;
 use KafkaBus\Core\Testing\Consumers\MessageFactory;
 use KafkaBus\Core\Testing\Messages\ConsumerHandlerFaker;
 use KafkaBus\Core\Testing\Messages\ProducerMessageFaker;
@@ -20,11 +20,11 @@ it('fake() replaces BusInterface binding with FakeBus', function () {
         ->toBeInstanceOf(FakeBus::class);
 });
 
-it('fake() replaces ConnectionRegistryInterface with ConnectionRegistryFaker', function () {
+it('fake() replaces ConnectionInterface with ConnectionFaker', function () {
     KafkaBus::fake();
 
-    expect(app(ConnectionRegistryInterface::class))
-        ->toBeInstanceOf(ConnectionRegistryFaker::class);
+    expect(app(ConnectionInterface::class))
+        ->toBeInstanceOf(ConnectionFaker::class);
 });
 
 it('facade resolves real Bus before fake() is called', function () {
@@ -77,6 +77,9 @@ it('assertNothingPublished fails when message was published', function () {
 it('listen() processes queued messages via FakeBus', function () {
     config()->set('kafka-bus.topics', ['products' => 'test-products-topic']);
     config()->set('kafka-bus.consumers.workers', [
+        'products' => [],
+    ]);
+    config()->set('kafka-bus.consumers.routes', [
         'products' => ConsumerHandlerFaker::class,
     ]);
 

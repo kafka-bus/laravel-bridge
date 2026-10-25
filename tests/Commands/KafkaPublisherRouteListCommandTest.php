@@ -8,7 +8,7 @@ use KafkaBus\Laravel\Tests\Fixtures\ProducerMiddlewareFake;
 it('shows warning when no routes configured', function () {
     config()->set('kafka-bus.producers.routes', []);
 
-    $this->artisan('kafka:route:list')
+    $this->artisan('kafka:publisher:route:list')
         ->expectsOutput('No routes registered')
         ->assertExitCode(0);
 });
@@ -19,7 +19,7 @@ it('shows routes in table', function () {
         ProducerMessageFaker::class => 'products',
     ]);
 
-    $this->artisan('kafka:route:list')
+    $this->artisan('kafka:publisher:route:list')
         ->expectsTable(
             ['Message', 'Topic key', 'Topic name', 'Middleware'],
             [[ProducerMessageFaker::class, 'products', 'testing.test-products-topic', '']]
@@ -36,7 +36,7 @@ it('shows middleware class names in route table', function () {
         ],
     ]);
 
-    $this->artisan('kafka:route:list')
+    $this->artisan('kafka:publisher:route:list')
         ->expectsTable(
             ['Message', 'Topic key', 'Topic name', 'Middleware'],
             [[ProducerMessageFaker::class, 'products', 'testing.test-products-topic', ProducerMiddlewareFake::class]]

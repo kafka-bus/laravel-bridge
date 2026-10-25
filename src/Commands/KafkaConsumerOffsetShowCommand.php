@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace KafkaBus\Laravel\Commands;
 
 use Illuminate\Console\Command;
-use KafkaBus\Core\Exceptions\Listeners\ListenerException;
-use KafkaBus\Core\Interfaces\Bus\BusInterface;
+use KafkaBus\Core\Exceptions\TopicCannotResolvedException;
+use KafkaBus\Laravel\Factories\PartitionsFactory;
+use RdKafka\Exception as RdKafkaException;
 
-final class KafkaOffsetShowCommand extends Command
+final class KafkaConsumerOffsetShowCommand extends Command
 {
-    protected $signature = 'kafka:offset:show {workerName}';
-    protected $description = 'Show current/min/max offsets for each partition of a worker topics';
+    protected $signature = 'kafka:consumer:offset:show {topicKey? : Topic key from kafka-bus.topics, omit to show all consumed topics}';
+    protected $description = 'Show current/min/max offsets for each partition of consumed topics';
 
-    public function handle(BusInterface $bus): int
+    public function handle(PartitionsFactory $partitionsFactory): int
     {
-        $workerName = $this->argument('workerName');
+        $topicKey = $this->argument('topicKey');
 
         try {
-            $partitions = $bus->listener($workerName)
-                ->partitions()
+            $partitions = $partitionsFactory->create($topicKey === null ? null : [$topicKey])
                 ->list();
 
             $rows = [];
@@ -36,7 +36,7 @@ final class KafkaOffsetShowCommand extends Command
             }
 
             if ($rows === []) {
-                $this->warn("Worker '$workerName' has no partitions to display");
+                $this->warn('No partitions to display');
 
                 return self::SUCCESS;
             }
@@ -48,7 +48,7 @@ final class KafkaOffsetShowCommand extends Command
 
             return self::SUCCESS;
         }
-        catch (ListenerException $exception) {
+        catch (TopicCannotResolvedException|RdKafkaException $exception) {
             $this->error($exception->getMessage());
 
             return self::FAILURE;

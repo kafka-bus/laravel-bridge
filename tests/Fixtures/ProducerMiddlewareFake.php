@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace KafkaBus\Laravel\Tests\Fixtures;
 
-use KafkaBus\Core\Interfaces\Pipelines\PipelineInterface;
-use KafkaBus\Core\Producers\Pipelines\ProducerPipelineHandler;
-use KafkaBus\Core\Producers\Pipelines\ProducerPipelineMiddleware;
+use KafkaBus\Core\Pipelines\PipelineInterface;
+use KafkaBus\Core\Producers\Messages\ProducerMessage;
+use KafkaBus\Core\Publishers\Pipelines\PublisherPipelineHandler;
+use KafkaBus\Core\Publishers\Pipelines\PublisherPipelineMiddleware;
 
-final class ProducerMiddlewareFake implements ProducerPipelineMiddleware
+final class ProducerMiddlewareFake implements PublisherPipelineMiddleware
 {
     /**
-     * @param PipelineInterface<ProducerPipelineHandler> $pipeline
-     * @return PipelineInterface<ProducerPipelineHandler>
+     * @param PipelineInterface<ProducerMessage, PublisherPipelineHandler> $pipeline
+     * @return PipelineInterface<ProducerMessage, PublisherPipelineHandler>
      */
     public function handle(PipelineInterface $pipeline): PipelineInterface
     {

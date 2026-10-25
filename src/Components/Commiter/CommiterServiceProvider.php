@@ -2,6 +2,7 @@
 
 namespace KafkaBus\Laravel\Components\Commiter;
 
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Redis\Connections\PhpRedisConnection;
@@ -61,8 +62,9 @@ final class CommiterServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param  array<string, mixed>  $options
-     * @param  array<string, mixed>  $config
+     * @param array<string, mixed> $options
+     * @param array<string, mixed> $config
+     * @throws BindingResolutionException
      */
     private function makeRedisRepositorySource(Application $app, array $options, array $config): RedisRepositorySource
     {

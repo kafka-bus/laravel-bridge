@@ -1,8 +1,8 @@
 <?php
 
-namespace KafkaBus\Laravel\Octane;
+namespace KafkaBus\Laravel\Components\Octane;
 
-use KafkaBus\Core\Interfaces\Bus\BusInterface;
+use KafkaBus\Core\BusInterface;
 
 class EnsureBusIsWarm
 {

@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace KafkaBus\Laravel\Commands;
 
 use Illuminate\Console\Command;
-use KafkaBus\Core\Interfaces\Bus\BusInterface;
+use KafkaBus\Laravel\Publishers\PublisherRoutesFactory;
 
-final class KafkaRouteListCommand extends Command
+final class KafkaPublisherRouteListCommand extends Command
 {
-    protected $signature = 'kafka:route:list';
-    protected $description = 'Display the list of registered producer message routes';
+    protected $signature = 'kafka:publisher:route:list';
+    protected $description = 'Display the list of registered publisher message routes';
 
-    public function handle(BusInterface $bus): int
+    public function handle(PublisherRoutesFactory $routesFactory): int
     {
-        $routes = $bus->routes();
+        $routes = $routesFactory->create()
+            ->all();
 
         if ($routes === []) {
             $this->warn('No routes registered');

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace KafkaBus\Laravel\Commands;
 
 use Illuminate\Console\Command;
-use KafkaBus\Laravel\Listeners\WorkerFactory;
+use KafkaBus\Laravel\Workers\WorkerFactory;
 
 final class KafkaWorkerListCommand extends Command
 {
@@ -23,26 +23,25 @@ final class KafkaWorkerListCommand extends Command
         }
 
         $rows = [];
+        $routes = config('kafka-bus.consumers.routes', []);
 
         foreach ($workerNames as $workerName) {
             $worker = $workerFactory->create($workerName);
 
-            foreach ($worker->topics() as $topic) {
-                $route = $worker->routes->get($topic->name);
+            foreach ($worker->topics as $topic) {
+                $route = $routes[$topic->key] ?? null;
 
                 $rows[] = [
                     $workerName,
                     $topic->key,
                     $topic->name,
-                    is_object($route?->handler) ? get_class($route->handler) : '?',
-                    implode("\n", array_map(get_class(...), $worker->options->middleware)),
-                    implode("\n", array_map(get_class(...), $route?->middleware ?: [])),
+                    is_array($route) ? ($route['handler'] ?? '?') : ($route ?? '?'),
                 ];
             }
         }
 
         $this->table(
-            ['Worker', 'Topic key', 'Topic name', 'Handler', 'Consumer Middleware', 'Route Middleware'],
+            ['Worker', 'Topic key', 'Topic name', 'Handler'],
             $rows
         );
 

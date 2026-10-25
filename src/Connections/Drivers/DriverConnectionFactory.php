@@ -2,7 +2,7 @@
 
 namespace KafkaBus\Laravel\Connections\Drivers;
 
-use KafkaBus\Core\Interfaces\Connections\ConnectionConfigInterface;
+use KafkaBus\Core\Connections\Config\ConnectionConfigInterface;
 
 abstract class DriverConnectionFactory
 {
