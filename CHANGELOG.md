@@ -2,6 +2,10 @@
 
 All notable changes to `kafka-bus/laravel-bridge` will be documented in this file.
 
+## v2.0.0 - 2026-10-25
+
+**Full Changelog**: https://github.com/kafka-bus/laravel-bridge/compare/v1.5.0...v2.0.0
+
 ## v1.5.0 - 2026-08-12
 
 ### What's Changed
