@@ -1,13 +1,2 @@
 parameters:
-	ignoreErrors:
-		-
-			message: '#^Instanceof between Illuminate\\Redis\\Connections\\PredisConnection and Illuminate\\Redis\\Connections\\PhpRedisConnection will always evaluate to false\.$#'
-			identifier: instanceof.alwaysFalse
-			count: 1
-			path: src/Components/Commiter/CommiterServiceProvider.php
-
-		-
-			message: '#^Unreachable statement \- code above always terminates\.$#'
-			identifier: deadCode.unreachable
-			count: 1
-			path: src/Components/Commiter/CommiterServiceProvider.php
+    ignoreErrors: []
