@@ -67,6 +67,7 @@
             "@php vendor/bin/testbench serve"
         ],
         "analyse": "vendor/bin/phpstan analyse --memory-limit=2G",
+        "analyse:baseline": "vendor/bin/phpstan analyse --memory-limit=2G --generate-baseline",
         "test": "vendor/bin/pest",
         "test-coverage": "vendor/bin/pest --coverage",
         "format": "vendor/bin/pint",

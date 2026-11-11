@@ -26,6 +26,7 @@ use KafkaBus\Laravel\Commands\KafkaConsumerOffsetSetCommand;
 use KafkaBus\Laravel\Commands\KafkaConsumerOffsetShowCommand;
 use KafkaBus\Laravel\Commands\KafkaPublisherRouteListCommand;
 use KafkaBus\Laravel\Commands\KafkaWorkerListCommand;
+use KafkaBus\Laravel\Commands\KafkaTopicListCommand;
 use KafkaBus\Laravel\Components\Octane\EnsureBusIsWarm;
 use KafkaBus\Laravel\Connections\ConnectionRegistryFactory;
 use KafkaBus\Laravel\Factories\TopicRegistryFactory;
@@ -86,6 +87,7 @@ class KafkaBusServiceProvider extends ServiceProvider
                 KafkaConsumerOffsetShowCommand::class,
                 KafkaConsumerOffsetSetCommand::class,
                 KafkaWorkerListCommand::class,
+                KafkaTopicListCommand::class,
                 KafkaPublisherRouteListCommand::class,
             ]);
         }

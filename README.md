@@ -208,14 +208,14 @@ php artisan kafka:consume default
 
 ## Artisan commands
 
-| Command                                              | Description                                                                                                                                      |
-|------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| `kafka:consume {workerName*}`                        | Start a long-running consumer for the given worker(s).                                                                                           |
-| `kafka:consume:routes {--expect=*}`                     | Consume all workers (configured and automatic), except the ones passed to `--expect`.                                                            |
-| `kafka:worker:list`                                  | Show registered workers, their topic keys, resolved topic names, handlers, consumer middleware, and route middleware.                            |
-| `kafka:consume:route:list`                           | Show routes registered in the receiver (topic → handler) with the effective middleware (global + route).                                                           |
-| `kafka:publisher:route:list`                         | Show registered producer routes (message class → topic) and middleware.                                                                          |
-| `kafka:offset:show {topicKey?}`                      | Show current / min / max offsets for every partition of the topic (all topics from `consumers.routes` when omitted).                             |
+| Command                                               | Description                                                                                                                                     |
+|-------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `kafka:consume {workerName*}`                         | Start a long-running consumer for the given worker(s).                                                                                          |
+| `kafka:consume:routes {--expect=*}`                   | Consume all workers (configured and automatic), except the ones passed to `--expect`.                                                           |
+| `kafka:worker:list`                                   | Show registered workers, their topic keys, resolved topic names, handlers, consumer middleware, and route middleware.                           |
+| `kafka:consume:route:list`                            | Show routes registered in the receiver (topic → handler) with the effective middleware (global + route).                                        |
+| `kafka:publisher:route:list`                          | Show registered producer routes (message class → topic) and middleware.                                                                         |
+| `kafka:offset:show {topicKey?}`                       | Show current / min / max offsets for every partition of the topic (all topics from `consumers.routes` when omitted).                            |
 | `kafka:offset:set {topicKey} {offset} {--partition=}` | Set the committed offset for a topic. `offset` accepts `earliest`, `latest`, or a numeric value. Omit `--partition` to apply to all partitions. |
 
 Offsets are read and committed for the consumer group from the global `consumers.additional_options['group.id']`, so the commands do not depend on a worker.
@@ -564,3 +564,17 @@ Please review [our security policy](../../security/policy) on how to report secu
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+
+### Topic availability and offsets
+
+Run `php artisan kafka:topic:list` to inspect every topic in `kafka-bus.topics`,
+including topics without consumer routes. Each partition shows the current
+committed offset of the configured consumer group, minimum and maximum offsets,
+and a status. A missing committed offset is displayed as `n/a` and is not an error
+when the partition watermark offsets are available. Max is the next offset after
+the last message, not a message count.
+
+Unavailable topics remain in the table; Kafka errors are displayed per topic and
+do not stop inspection of other topics. Unavailability can mean a missing topic,
+insufficient permissions, or a broker/network failure; it does not prove absence.
+The command exits with code 1 if any topic is unavailable, otherwise 0.
