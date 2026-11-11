@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Redis\Connections\PhpRedisConnection;
+use Illuminate\Redis\Connections\PredisConnection;
 use Illuminate\Redis\RedisManager;
 use KafkaBus\Commiter\Interfaces\RepositorySourceInterface;
 use KafkaBus\Laravel\Components\Commiter\CommiterServiceProvider;
@@ -49,7 +50,10 @@ it('rejects a redis connection that is not phpredis', function () {
     config()->set('kafka-bus-commiter.source', 'cache');
 
     $redis = Mockery::mock(RedisManager::class);
-    $redis->shouldReceive('connection')->andReturn(new stdClass());
+
+    $redis->shouldReceive('connection')
+        ->andReturn(Mockery::mock(PredisConnection::class));
+
     $this->app->instance(RedisManager::class, $redis);
 
     $this->app->make(RepositorySourceInterface::class);

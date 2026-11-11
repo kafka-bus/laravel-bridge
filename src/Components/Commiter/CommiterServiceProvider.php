@@ -5,6 +5,7 @@ namespace KafkaBus\Laravel\Components\Commiter;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\ConnectionResolverInterface;
+use Illuminate\Redis\Connections\Connection;
 use Illuminate\Redis\Connections\PhpRedisConnection;
 use Illuminate\Redis\RedisManager;
 use Illuminate\Support\ServiceProvider;
@@ -71,6 +72,15 @@ final class CommiterServiceProvider extends ServiceProvider
         $connection = $app->make(RedisManager::class)
             ->connection($options['connection'] ?? 'default');
 
+        return $this->makeRedisSourceFromConnection($connection, $options, $config);
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @param array<string, mixed> $config
+     */
+    private function makeRedisSourceFromConnection(Connection $connection, array $options, array $config): RedisRepositorySource
+    {
         if (! $connection instanceof PhpRedisConnection) {
             throw new InvalidArgumentException(
                 'Redis repository source requires a PhpRedis connection (driver=phpredis).'
