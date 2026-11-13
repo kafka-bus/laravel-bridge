@@ -2,6 +2,14 @@
 
 All notable changes to `kafka-bus/laravel-bridge` will be documented in this file.
 
+## v2.2.0 - 2026-11-13
+
+### What's Changed
+
+* feat: Поддержка типизированных топиков by @popkovkirill in https://github.com/kafka-bus/laravel-bridge/pull/12
+
+**Full Changelog**: https://github.com/kafka-bus/laravel-bridge/compare/v2.1.0...v2.2.0
+
 ## v2.1.0 - 2026-11-11
 
 ### What's Changed
