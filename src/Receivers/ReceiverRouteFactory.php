@@ -7,12 +7,9 @@ namespace KafkaBus\Laravel\Receivers;
 use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Container\BindingResolutionException;
-use KafkaBus\Core\Receivers\Messages\NativeMessageFactory;
-use KafkaBus\Core\Receivers\Routing\ReceiverRoutesBuilder;
+use KafkaBus\Core\Receivers\Routing\HandlerExecutor;
 use KafkaBus\Core\Receivers\Routing\Route;
-use KafkaBus\Core\Receivers\Routing\RouteInfo;
 use KafkaBus\Core\Topics\Topic;
-use KafkaBus\Core\Topics\TopicRegistry;
 use KafkaBus\Laravel\Exceptions\KafkaBusConfigurationException;
 use KafkaBus\Laravel\Factories\MiddlewareMerger;
 
@@ -30,7 +27,6 @@ final readonly class ReceiverRouteFactory
 
     public function __construct(
         private Container $container,
-        private TopicRegistry $topicRegistry,
         Repository $config
     ) {
         $this->middlewareMerger = new MiddlewareMerger(config('kafka-bus.consumers.middleware', []));
@@ -57,13 +53,10 @@ final readonly class ReceiverRouteFactory
 
         $middleware = $this->middlewareMerger->merge($route['middleware'] ?? []);
 
-        return ReceiverRoutesBuilder::make($this->topicRegistry, new NativeMessageFactory())
-            ->add(new RouteInfo(
-                $topic->key,
-                $this->container->make($route['handler']),
-                array_map($this->container->make(...), $middleware),
-            ))
-            ->build()
-            ->get($topic->name);
+        return new Route(
+            topic: $topic,
+            handler: HandlerExecutor::fromHandler($this->container->make($route['handler'])),
+            middleware: array_map($this->container->make(...), $middleware),
+        );
     }
 }

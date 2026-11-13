@@ -4,14 +4,22 @@ namespace KafkaBus\Laravel\Publishers;
 
 use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
+use KafkaBus\Commiter\Middleware\PublisherIdempotencyMiddleware;
 use KafkaBus\Core\Publishers\Routing\Options;
 use KafkaBus\Core\Publishers\Routing\Route;
 use KafkaBus\Core\Topics\TopicRegistry;
 use KafkaBus\Laravel\Exceptions\KafkaBusConfigurationException;
+use KafkaBus\Laravel\Factories\MiddlewareMerger;
 use KafkaBus\Laravel\Factories\OptionsMerger;
+use KafkaBus\TypedTopics\PublisherTypedTopicMiddleware;
 
 final readonly class PublisherRouteFactory
 {
+    public const DEFAULT = [
+        PublisherIdempotencyMiddleware::class,
+        PublisherTypedTopicMiddleware::class,
+    ];
+
     /**
      * @var array<class-string, mixed>
      */
@@ -24,7 +32,15 @@ final readonly class PublisherRouteFactory
         private TopicRegistry $topicRegistry,
         Repository $config
     ) {
-        $this->optionsMerger = new OptionsMerger($config->get('kafka-bus.producers', []));
+        $globalMiddleware = (new MiddlewareMerger(self::DEFAULT))
+            ->merge(config('kafka-bus.producers.middleware', []));
+
+        $options = array_merge(
+            $config->get('kafka-bus.producers', []),
+            ['middleware' => $globalMiddleware]
+        );
+
+        $this->optionsMerger = new OptionsMerger($options);
         $this->routes = $config->get('kafka-bus.producers.routes', []);
     }
 

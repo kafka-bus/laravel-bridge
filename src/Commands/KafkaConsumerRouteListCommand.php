@@ -29,7 +29,7 @@ final class KafkaConsumerRouteListCommand extends Command
             $rows[] = [
                 $route->topic->key,
                 $route->topic->name,
-                is_object($route->handler) ? get_class($route->handler) : '?',
+                is_object($route->handler->handler) ? get_class($route->handler->handler) : '?',
                 implode("\n", array_map(get_class(...), $route->middleware)),
             ];
         }
