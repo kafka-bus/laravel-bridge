@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use KafkaBus\Core\Testing\Messages\ProducerMessageFaker;
+use KafkaBus\Laravel\Publishers\PublisherRouteFactory;
 use KafkaBus\Laravel\Tests\Fixtures\ProducerMiddlewareFake;
 
 it('shows warning when no routes configured', function () {
@@ -22,7 +23,7 @@ it('shows routes in table', function () {
     $this->artisan('kafka:publisher:route:list')
         ->expectsTable(
             ['Message', 'Topic key', 'Topic name', 'Middleware'],
-            [[ProducerMessageFaker::class, 'products', 'testing.test-products-topic', '']]
+            [[ProducerMessageFaker::class, 'products', 'testing.test-products-topic', implode("\n", PublisherRouteFactory::DEFAULT)]]
         )
         ->assertExitCode(0);
 });
@@ -36,10 +37,12 @@ it('shows middleware class names in route table', function () {
         ],
     ]);
 
+    $middleware = [...PublisherRouteFactory::DEFAULT, ProducerMiddlewareFake::class];
+
     $this->artisan('kafka:publisher:route:list')
         ->expectsTable(
             ['Message', 'Topic key', 'Topic name', 'Middleware'],
-            [[ProducerMessageFaker::class, 'products', 'testing.test-products-topic', ProducerMiddlewareFake::class]]
+            [[ProducerMessageFaker::class, 'products', 'testing.test-products-topic', implode("\n", $middleware)]]
         )
         ->assertExitCode(0);
 });

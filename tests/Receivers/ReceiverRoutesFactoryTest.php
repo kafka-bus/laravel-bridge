@@ -31,7 +31,7 @@ it('collects routes keyed by topic name', function () {
     $route = $routes->get('testing.test-orders-topic');
 
     expect($route->topic->key)->toBe('orders')
-        ->and($route->handler)->toBeInstanceOf(VoidConsumerHandlerFaker::class)
+        ->and($route->handler->handler)->toBeInstanceOf(VoidConsumerHandlerFaker::class)
         ->and(array_map(fn (Route $route) => $route->topic->key, $routes->all()))->toBe(['products', 'orders']);
 });
 
@@ -65,7 +65,9 @@ it('does not duplicate global middleware repeated in the route', function () {
     $route = resolve(ReceiverRoutesFactory::class)->create()
         ->get('testing.test-products-topic');
 
-    expect(array_map(get_class(...), $route->middleware))->toBe([MessageMiddlewareFake::class]);
+    expect(array_map(get_class(...), $route->middleware))->toBe([
+        MessageMiddlewareFake::class,
+    ]);
 });
 
 it('does not resolve handlers until the route is requested', function () {
