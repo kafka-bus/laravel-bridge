@@ -1,10 +1,17 @@
 {
     "name": "kafka-bus/laravel-bridge",
-    "description": "This is my package laravel-kafka-bus",
+    "description": "Laravel bridge for kafka-bus: service providers, Artisan commands, Facade, Fake/testing layer, and idempotent Commiter component",
     "keywords": [
-        "Micromus",
         "laravel",
-        "kafka-bus-laravel"
+        "kafka",
+        "kafka-bus",
+        "message-bus",
+        "consumer",
+        "producer",
+        "event-driven",
+        "microservices",
+        "queue",
+        "rdkafka"
     ],
     "homepage": "https://github.com/kafka-bus/laravel-bridge",
     "license": "MIT",
@@ -19,7 +26,7 @@
         "php": "^8.2",
         "ext-rdkafka": "*",
         "illuminate/contracts": "^10.0 || ^11.0 || ^12.38 || ^13.0",
-        "kafka-bus/kafka-bus": "^2.2.1"
+        "kafka-bus/kafka-bus": "^2.4"
     },
     "suggest": {
         "laravel/octane": "Required for Octane worker warm-up support"

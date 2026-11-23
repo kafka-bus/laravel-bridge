@@ -9,6 +9,8 @@ use KafkaBus\Core\BusInterface;
 use KafkaBus\Core\Connections\ConnectionInterface;
 use KafkaBus\Core\Connections\Registry\ConnectionRegistryInterface;
 use KafkaBus\Core\Connections\Registry\DriverRegistry;
+use KafkaBus\Core\Consumers\ConsumerHandlerFactory;
+use KafkaBus\Core\Consumers\ConsumerHandlerFactoryInterface;
 use KafkaBus\Core\Publishers\PublisherFactory;
 use KafkaBus\Core\Publishers\PublisherStreamFactory;
 use KafkaBus\Core\Publishers\PublisherStreamFactoryInterface;
@@ -39,6 +41,7 @@ use KafkaBus\Worker\Consumers\ConsumerStreamFactory;
 use KafkaBus\Worker\Consumers\ConsumerStreamFactoryInterface;
 use KafkaBus\Worker\Registry\WorkerRegistryInterface;
 use Laravel\Octane\Events\WorkerStarting;
+use Psr\Log\LoggerInterface;
 
 class KafkaBusServiceProvider extends ServiceProvider
 {
@@ -54,6 +57,8 @@ class KafkaBusServiceProvider extends ServiceProvider
         $this->app->singleton(ConnectionRegistryInterface::class, $this->makeConnectionRegistry(...));
         $this->app->singleton(ConnectionInterface::class, $this->makeConnection(...));
         $this->app->singleton(WorkerRegistryInterface::class, $this->makeWorkerRegistry(...));
+
+        $this->app->bind(ConsumerHandlerFactoryInterface::class, $this->makeConsumerHandlerFactory(...));
 
         $this->app->singleton(DriverRegistry::class, DriverRegistry::class);
         $this->app->singleton(BusInterface::class, Bus::class);
@@ -132,5 +137,10 @@ class KafkaBusServiceProvider extends ServiceProvider
     {
         return $app->make(ConnectionRegistryInterface::class)
             ->connection($app['config']->get('kafka-bus.default'));
+    }
+
+    protected function makeConsumerHandlerFactory(Application $app): ConsumerHandlerFactoryInterface
+    {
+        return new ConsumerHandlerFactory($app->make(LoggerInterface::class));
     }
 }
