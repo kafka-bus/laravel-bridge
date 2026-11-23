@@ -2,6 +2,14 @@
 
 All notable changes to `kafka-bus/laravel-bridge` will be documented in this file.
 
+## v2.3.0 - 2026-11-23
+
+### What's Changed
+
+* fix: Поддержка Kafka Bus 2.4 by @popkovkirill in https://github.com/kafka-bus/laravel-bridge/pull/13
+
+**Full Changelog**: https://github.com/kafka-bus/laravel-bridge/compare/v2.2.0...v2.3.0
+
 ## v2.2.0 - 2026-11-13
 
 ### What's Changed
